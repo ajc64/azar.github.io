@@ -1,0 +1,308 @@
+<!doctype html>
+
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Étiquette & Bilan — Scanner intégré</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+  <style>
+    :root{--bg:#f7fbfc;--card:#ffffff;--muted:#475569;--accent:#0ea5a4;--good:#16a34a;--warn:#f59e0b;--bad:#dc2626}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;padding:12px;background:linear-gradient(180deg,#eef7f8 0%,#ffffff 100%);color:#0f1724}
+    .wrap{max-width:920px;margin:0 auto}
+    header{display:flex;align-items:center;gap:12px}
+    h1{font-size:20px;margin:0}
+    .card{background:var(--card);border-radius:12px;padding:12px;margin-top:12px;box-shadow:0 6px 18px rgba(12,30,38,0.06);border:1px solid rgba(2,6,23,0.04)}
+    label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+    input[type=number], input[type=text], select{width:100%;padding:8px;border-radius:8px;border:1px solid #eef2f7;background:transparent;color:inherit}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    button{background:var(--accent);color:white;border:none;padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+    button.ghost{background:transparent;color:var(--muted);border:1px solid #eef2f7}
+    .result{display:flex;gap:12px;align-items:center}
+    .badge{padding:8px 12px;border-radius:999px;font-weight:700}
+    .green{background:#ecfdf5;color:var(--good)}
+    .yellow{background:#fff7ed;color:var(--warn)}
+    .red{background:#fff1f2;color:var(--bad)}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:8px;text-align:left;border-bottom:1px dashed #f1f5f9;font-size:13px}
+    .small{font-size:12px;color:var(--muted)}
+    .center{display:flex;justify-content:center;align-items:center}
+    #reader{width:100%;min-height:220px;border-radius:8px;overflow:hidden;background:#000}
+    .product-card{display:flex;gap:12px;align-items:flex-start}
+    .prod-info{flex:1}
+    footer{margin-top:14px;color:var(--muted);font-size:13px}
+    @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Étiquette & Bilan — Scanner</h1>
+      <div class="small">Style : note simple • Objectif : équilibre & perte de poids</div>
+    </header><section class="card">
+  <div class="small">Paramètres utilisateur</div>
+  <div class="grid">
+    <div>
+      <label>Poids (kg)</label>
+      <input id="weight" type="number" value="80" min="30" max="300" />
+    </div>
+    <div>
+      <label>Objectif</label>
+      <select id="goal">
+        <option value="lose">Perte de poids</option>
+        <option value="maintain">Maintien</option>
+        <option value="sport">Sport</option>
+      </select>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h3>Scanner un produit</h3>
+  <div class="small">Appuie sur <strong>Scanner</strong>, autorise la caméra puis vise le code-barres.</div>
+  <div style="margin-top:10px" class="actions">
+    <button id="startScan">📷 Scanner</button>
+    <button id="stopScan" class="ghost">⛔ Arrêter</button>
+    <button id="manualBtn" class="ghost">✏️ Saisie manuelle</button>
+  </div>
+
+  <div id="reader" style="margin-top:10px;display:none"></div>
+
+  <div id="scanResult" style="margin-top:12px"></div>
+</section>
+
+<section class="card" id="manualSection">
+  <h3>Saisie manuelle (valeurs pour 100 g)</h3>
+  <div class="grid">
+    <div>
+      <label>Nom du produit</label>
+      <input id="p_name" type="text" placeholder="Ex : Yaourt nature" />
+    </div>
+    <div>
+      <label>Portion (g)</label>
+      <input id="portion" type="number" value="100" min="1" />
+    </div>
+    <div>
+      <label>Énergie (kcal / 100 g)</label>
+      <input id="kcal" type="number" value="100" />
+    </div>
+    <div>
+      <label>Glucides (g / 100 g)</label>
+      <input id="carb" type="number" value="10" />
+    </div>
+    <div>
+      <label>Dont sucres (g / 100 g)</label>
+      <input id="sugar" type="number" value="5" />
+    </div>
+    <div>
+      <label>Protéines (g / 100 g)</label>
+      <input id="prot" type="number" value="5" />
+    </div>
+    <div>
+      <label>Lipides (g / 100 g)</label>
+      <input id="fat" type="number" value="3" />
+    </div>
+    <div>
+      <label>Fibres (g / 100 g)</label>
+      <input id="fib" type="number" value="2" />
+    </div>
+  </div>
+  <div class="actions">
+    <button id="evalBtn">Évaluer</button>
+    <button id="addLogManual" class="ghost">Ajouter au journal</button>
+  </div>
+  <div id="eval" style="margin-top:10px"></div>
+</section>
+
+<section class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h3>Journal & Totaux</h3>
+    <div class="small">Cible kcal : <span id="targetKcal">2000</span></div>
+  </div>
+  <table id="logTable"><thead><tr><th>Produit</th><th>Portion</th><th>kcal</th><th>glucides</th><th>prot</th><th>lipides</th><th></th></tr></thead><tbody></tbody></table>
+  <div style="margin-top:8px;display:flex;gap:8px">
+    <button id="clearLog" class="ghost">Reset journée</button>
+    <button id="exportLog" class="ghost">Exporter JSON</button>
+  </div>
+  <div id="totals" style="margin-top:10px" class="small"></div>
+  <div id="interp" style="margin-top:8px;font-weight:700"></div>
+</section>
+
+<footer class="small">Fonctionne en local. Le scanner nécessite une connexion Internet pour récupérer les produits depuis Open Food Facts (https://world.openfoodfacts.org). Si le produit n'est pas trouvé, tu peux le saisir manuellement.</footer>
+
+  </div>  <!-- html5-qrcode for barcode scanning -->  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>  <script>
+    // State helpers
+    function saveState(k,v){localStorage.setItem(k,JSON.stringify(v))}
+    function loadState(k,def){const v=localStorage.getItem(k);return v?JSON.parse(v):def}
+
+    // Estimate kcal target
+    function estimateTargets(){
+      const weight = Number(document.getElementById('weight').value)||80
+      const goal = document.getElementById('goal').value
+      let kcal = Math.round(24 * weight)
+      if(goal==='lose') kcal = Math.round(kcal - 500)
+      if(goal==='sport') kcal = Math.round(kcal + 300)
+      document.getElementById('targetKcal').textContent = kcal
+      saveState('targets',{kcal})
+      renderLog()
+    }
+
+    // Note / scoring simple
+    function scoreItem(item){
+      let score = 100
+      if(item.kcal>400) score -= 20
+      if(item.sugars>10) score -= 30
+      if(item.fat>20) score -= 15
+      if(item.fib<2) score -= 10
+      if(item.prot>10) score += 5
+      return Math.max(0,Math.min(100,score))
+    }
+
+    // Render product summary
+    function renderProductCard(obj){
+      const score = scoreItem(obj)
+      let cls='green', label='Bon'
+      if(score<60){cls='red';label='Mauvais'} else if(score<85){cls='yellow';label='Attention'}
+      const html = `
+        <div class="product-card">
+          <div style="min-width:90px;text-align:center"><div class="badge ${cls}">${label}</div></div>
+          <div class="prod-info">
+            <div style="font-weight:700">${obj.name || 'Produit inconnu'}</div>
+            <div class="small">${obj.portion} g — ${obj.kcal} kcal • ${obj.carbs} g glucides (${obj.sugars} g sucres) • ${obj.prot} g prot • ${obj.fat} g lipides • ${obj.fib} g fibres</div>
+            <div style="margin-top:8px"><button id="addScanned">➕ Ajouter au journal</button></div>
+          </div>
+        </div>
+      `
+      document.getElementById('scanResult').innerHTML = html
+      document.getElementById('addScanned').addEventListener('click',()=>{addToLog(obj);document.getElementById('scanResult').innerHTML='';})
+    }
+
+    // Journal functions
+    function loadLog(){return loadState('foodlog',[])}
+    function saveLog(log){saveState('foodlog',log)}
+    function addToLog(item){const log=loadLog();log.push(item);saveLog(log);renderLog()}
+    function clearLog(){if(confirm('Vider la journée ?')){localStorage.removeItem('foodlog');renderLog()}}
+
+    function renderLog(){
+      const tbody=document.querySelector('#logTable tbody')
+      tbody.innerHTML=''
+      const log=loadLog()
+      let sum={kcal:0,carbs:0,prot:0,fat:0}
+      log.forEach((it,idx)=>{
+        sum.kcal+=it.kcal;sum.carbs+=it.carbs;sum.prot+=it.prot;sum.fat+=it.fat
+        const tr=document.createElement('tr')
+        tr.innerHTML=`<td>${it.name}</td><td>${it.portion} g</td><td>${it.kcal}</td><td>${it.carbs}</td><td>${it.prot}</td><td>${it.fat}</td><td><button data-idx="${idx}" class="ghost">suppr</button></td>`
+        tbody.appendChild(tr)
+      })
+      document.getElementById('totals').textContent = `Total : ${Math.round(sum.kcal)} kcal • ${Math.round(sum.carbs)} g glucides • ${Math.round(sum.prot)} g prot • ${Math.round(sum.fat)} g lipides`
+
+      const target = loadState('targets',{kcal:2000}).kcal
+      const diff = Math.round(target - sum.kcal)
+      const interp = document.getElementById('interp')
+      if(diff>200) interp.textContent = `Déficit ≈ ${diff} kcal (si objectif maintien).`;
+      else if(diff<-200) interp.textContent = `Excès ≈ ${-diff} kcal.`;
+      else interp.textContent = `Proche de l'objectif.`
+
+      document.querySelectorAll('button[data-idx]').forEach(b=>b.addEventListener('click',e=>{
+        const i=Number(e.target.dataset.idx)
+        const l=loadLog();l.splice(i,1);saveLog(l);renderLog()
+      }))
+    }
+
+    // Manual evaluate
+    function evaluateProduct(){
+      const name = document.getElementById('p_name').value || 'Produit'
+      const portion = Number(document.getElementById('portion').value)||100
+      const kcal100 = Number(document.getElementById('kcal').value)||0
+      const carb100 = Number(document.getElementById('carb').value)||0
+      const sugar100 = Number(document.getElementById('sugar').value)||0
+      const prot100 = Number(document.getElementById('prot').value)||0
+      const fat100 = Number(document.getElementById('fat').value)||0
+      const fib100 = Number(document.getElementById('fib').value)||0
+
+      const f = portion/100
+      const obj = {
+        name,portion, kcal: Math.round(kcal100*f), carbs: +(carb100*f).toFixed(1), sugars: +(sugar100*f).toFixed(1), prot: +(prot100*f).toFixed(1), fat: +(fat100*f).toFixed(1), fib: +(fib100*f).toFixed(1)
+      }
+      renderProductCard(obj)
+      return obj
+    }
+
+    document.getElementById('evalBtn').addEventListener('click',()=>evaluateProduct())
+    document.getElementById('addLogManual').addEventListener('click',()=>{const it=evaluateProduct();addToLog(it)})
+    document.getElementById('clearLog').addEventListener('click',()=>clearLog())
+    document.getElementById('exportLog').addEventListener('click',()=>{const data=JSON.stringify(loadLog(),null,2);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='foodlog.json';a.click();URL.revokeObjectURL(url)})
+
+    document.getElementById('manualBtn').addEventListener('click',()=>{document.getElementById('manualSection').scrollIntoView({behavior:'smooth'})})
+
+    document.getElementById('addLogManual').addEventListener('click',()=>{const it=evaluateProduct();addToLog(it)})
+
+    document.getElementById('goal').addEventListener('change',()=>estimateTargets())
+    document.getElementById('weight').addEventListener('change',()=>estimateTargets())
+
+    // Scanner setup using html5-qrcode
+    let html5QrCode=null
+    const readerDiv = document.getElementById('reader')
+    document.getElementById('startScan').addEventListener('click',async()=>{
+      readerDiv.style.display='block'
+      if(!html5QrCode){
+        html5QrCode = new Html5Qrcode(/* element id */ "reader", { verbose:false })
+      }
+      const config = { fps: 10, qrbox: { width: 300, height: 80 }, supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA], experimentalFeatures: { useBarCodeDetectorIfSupported: true } }
+      try{
+        await Html5Qrcode.getCameras()
+        html5QrCode.start({ facingMode: "environment" }, config, qrCodeMessage => {
+          // qrCodeMessage contains the barcode value
+          handleBarcode(qrCodeMessage)
+        }, errorMessage => {
+          // ignore per-frame errors
+        })
+      }catch(err){
+        alert('Impossible d\'accéder à la caméra : vérifie les permissions dans les paramètres.')
+      }
+    })
+
+    document.getElementById('stopScan').addEventListener('click',async()=>{
+      if(html5QrCode){
+        await html5QrCode.stop(); html5QrCode.clear(); html5QrCode=null
+      }
+      document.getElementById('reader').style.display='none'
+    })
+
+    async function handleBarcode(code){
+      // Stop scanning briefly
+      if(html5QrCode){ try{ await html5QrCode.pause(true) }catch(e){} }
+      document.getElementById('scanResult').innerHTML = `<div class="small">Recherche du produit… (${code})</div>`
+      try{
+        const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(code)}.json`)
+        const data = await res.json()
+        if(data.status===1){
+          const p = data.product
+          const per100 = (val)=>{ if(!val && val!==0) return 0; return Number(val) }
+          const obj = {
+            name: p.product_name || (p.brands && p.brands.split(',')[0]) || 'Produit trouvé',
+            portion: 100,
+            kcal: Math.round(per100(p.nutriments && (p.nutriments.energy_kcal_100g || p.nutriments['energy-kcal_100g'] || p.nutriments.energy_100g || 0))),
+            carbs: per100(p.nutriments && (p.nutriments.carbohydrates_100g || 0)),
+            sugars: per100(p.nutriments && (p.nutriments.sugars_100g || 0)),
+            prot: per100(p.nutriments && (p.nutriments.proteins_100g || 0)),
+            fat: per100(p.nutriments && (p.nutriments.fat_100g || 0)),
+            fib: per100(p.nutriments && (p.nutriments.fiber_100g || 0)),
+            code
+          }
+          renderProductCard(obj)
+        }else{
+          document.getElementById('scanResult').innerHTML = `<div class="small">Produit non trouvé dans Open Food Facts (code ${code}). Tu peux le saisir manuellement.</div>`
+        }
+      }catch(e){
+        document.getElementById('scanResult').innerHTML = `<div class="small">Erreur de recherche. Vérifie ta connexion internet.</div>`
+      }
+      // resume scanning
+      if(html5QrCode){ try{ await html5QrCode.pause(false) }catch(e){} }
+    }
+
+    // Load state on start
+    window.addEventListener('load',()=>{ const savedTargets = loadState('targets',null); if(savedTargets) document.getElementById('targetKcal').textContent = savedTargets.kcal; estimateTargets(); renderLog() })
+  </script></body>
+</html>
